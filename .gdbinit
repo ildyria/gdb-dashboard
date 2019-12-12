@@ -1866,8 +1866,6 @@ The length defaults to 16 bytes.''',
 class Registers(Dashboard.Module):
     '''Show the CPU registers and their values.'''
 
-    names =
-
     def __init__(self):
         self.table = {}
 
@@ -1900,12 +1898,15 @@ class Registers(Dashboard.Module):
             return 't' + str(num - 25) # t3 t4 t5 t6 = x28 x29 x30 x31
         return ''
 
-    def pretty_names(self, name):
-        pretty = self.riscv_names(name)
-        if pretty == '':
-            return name
+    def pretty_names(self, riscv, name):
+        if riscv:
+            pretty = self.riscv_names(name)
+            if pretty == '':
+                return name
+            else:
+                return pretty
         else:
-            return pretty
+            return name
 
     def lines(self, term_width, term_height, style_changed):
         # skip if the current thread is not stopped
@@ -1921,6 +1922,7 @@ class Registers(Dashboard.Module):
                                      run('info registers').strip().split('\n')))
         # fetch registers status
         registers = []
+        riscv = len(register_list) == 33
         for name in register_list:
             # Exclude registers with a dot '.' or parse_and_eval() will fail
             if '.' in name:
@@ -1929,7 +1931,7 @@ class Registers(Dashboard.Module):
             string_value = Registers.format_value(value)
             changed = self.table and (self.table.get(name, '') != string_value)
             self.table[name] = string_value
-            registers.append((pretty_names(name), string_value, changed))
+            registers.append((self.pretty_names(riscv, name), string_value, changed))
         # compute lengths considering an extra space between and around the
         # entries (hence the +2 and term_width - 1)
         max_name = max(len(name) for name, _, _ in registers)

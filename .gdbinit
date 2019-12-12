@@ -1905,7 +1905,7 @@ class Registers(Dashboard.Module):
         if pretty == '':
             return name
         else:
-            return name + '-' + pretty
+            return pretty
 
     def lines(self, term_width, term_height, style_changed):
         # skip if the current thread is not stopped

@@ -34,6 +34,7 @@ import os
 import re
 import struct
 import traceback
+import sys
 
 # Common attributes ------------------------------------------------------------
 
@@ -1868,45 +1869,63 @@ class Registers(Dashboard.Module):
 
     def __init__(self):
         self.table = {}
+        self.riscv = 0
 
     def label(self):
         return 'Registers'
 
     def riscv_names(self,name):
-        num = int(name[1:])
-        if num == 0:
+        if name[:1] == 'x':
+            num = int(name[1:])
+            if num == 0:
+                return ''
+            if num == 1:
+                return 'ra'
+            if num == 2:
+                return 'sp'
+            if num == 3:
+                return 'gp'
+            if num == 4:
+                return 'tp'
+            if num == 8:
+                return 's0/fp'
+            if num == 9:
+                return 's1'
+            if num < 8:
+                return 't' + str(num - 5) # t0 t1 t2 = x5 x6 x7
+            if num < 18:
+                return 'a' + str(num - 10) # a0 a1 a2 a3 a4 a5 a6 a7 = x10 x11 x12 x13 x14 x15 x16 x17
+            if num < 28:
+                return 's' + str(num - 16) # s2 s3 s4 s5 s6 s7 s8 s9 s10 s11 = x18 x19 x20 x21 x22 x23 x24 x25 x26 x27
+            if num < 32:
+                return 't' + str(num - 25) # t3 t4 t5 t6 = x28 x29 x30 x31
             return ''
-        if num == 1:
-            return 'ra'
-        if num == 2:
-            return 'sp'
-        if num == 3:
-            return 'gp'
-        if num == 4:
-            return 'tp'
-        if num == 8:
-            return 's0/fp'
-        if num == 9:
-            return 's1'
-        if num < 8:
-            return 't' + str(num - 5) # t0 t1 t2 = x5 x6 x7
-        if num < 18:
-            return 'a' + str(num - 10) # a0 a1 a2 a3 a4 a5 a6 a7 = x10 x11 x12 x13 x14 x15 x16 x17
-        if num < 28:
-            return 's' + str(num - 16) # s2 s3 s4 s5 s6 s7 s8 s9 s10 s11 = x18 x19 x20 x21 x22 x23 x24 x25 x26 x27
-        if num < 32:
-            return 't' + str(num - 25) # t3 t4 t5 t6 = x28 x29 x30 x31
-        return ''
-
-    def pretty_names(self, riscv, name):
-        if riscv:
-            pretty = self.riscv_names(name)
-            if pretty == '':
-                return name
-            else:
-                return pretty
         else:
+            return ''
+
+    def pretty_names(self, name):
+        if name[1:] != 'x':
             return name
+
+        if self.riscv == 0:
+            found = False
+            for arg in sys.argv:
+                if re.search('risc.?v?', arg, re.IGNORECASE):
+                    found = True
+                    print('FOUND')
+            if found:
+                self.riscv = 1
+            else:
+                self.riscv = -1
+
+        if self.riscv == -1:
+            return name
+
+        pretty = self.riscv_names(name)
+        if pretty == '':
+            return name
+        else:
+            return pretty
 
     def lines(self, term_width, term_height, style_changed):
         # skip if the current thread is not stopped
